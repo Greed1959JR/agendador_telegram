@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor
+from pytz import utc
 
 app = Flask(__name__)
 bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
@@ -47,7 +48,6 @@ def enviar():
     imagem = request.form['imagem']
     grupo = request.form['grupo']
 
-    # Sem ajuste manual de fuso horário — já vem certo do navegador
     data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M").strftime("%Y-%m-%d %H:%M:%S")
 
     with sqlite3.connect(DATABASE) as conn:
@@ -110,9 +110,10 @@ def verificar_agendamentos():
                 print(f"Erro no agendamento automático: {e}")
         conn.commit()
 
-scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)})
+scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)}, timezone=utc)
 scheduler.add_job(verificar_agendamentos, 'interval', minutes=1)
 scheduler.start()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+
