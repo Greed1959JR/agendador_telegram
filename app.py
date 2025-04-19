@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from telegram import Bot
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ CHAT_ID_VIP = "-1002600167995"
 
 DATABASE = os.path.join(os.path.dirname(__file__), "database.db")
 
-# Cria o banco de dados se não existir
+# Criação da tabela caso ainda não exista
 def init_db():
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
@@ -29,7 +29,7 @@ def init_db():
         ''')
         conn.commit()
 
-init_db()  # Chama isso logo que o app inicia
+init_db()
 
 @app.route('/')
 def index():
@@ -42,9 +42,12 @@ def index():
 @app.route('/enviar', methods=['POST'])
 def enviar():
     texto = request.form['texto']
-    imagem = request.form['imagem']  # URL ou caminho local
+    imagem = request.form['imagem']
     grupo = request.form['grupo']
-    data_envio = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Converte data/hora para datetime e ajusta para UTC-3 (Brasília)
+    data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M")
+    data_envio = (data_envio - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S")
 
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
