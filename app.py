@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor
-import pytz
+from pytz import timezone
 
 app = Flask(__name__)
 bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
@@ -15,7 +15,7 @@ CHAT_ID_FREE = "-1002508674229"
 CHAT_ID_VIP = "-1002600167995"
 
 DATABASE = os.path.join(os.path.dirname(__file__), "database.db")
-FUSO_BR = pytz.timezone("America/Sao_Paulo")
+FUSO_BR = timezone("America/Sao_Paulo")
 
 # Criação da tabela caso ainda não exista
 def init_db():
@@ -112,7 +112,7 @@ def verificar_agendamentos():
                 print(f"Erro no agendamento automático: {e}")
         conn.commit()
 
-scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)})
+scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)}, timezone=FUSO_BR)
 scheduler.add_job(verificar_agendamentos, 'interval', minutes=1)
 scheduler.start()
 
