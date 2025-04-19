@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from telegram import Bot
 import sqlite3
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
@@ -10,19 +11,25 @@ bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
 CHAT_ID_FREE = "-1002508674229"
 CHAT_ID_VIP = "-1002600167995"
 
-DATABASE = "database.db"
+DATABASE = os.path.join(os.path.dirname(__file__), "database.db")
 
+# Cria o banco de dados se não existir
 def init_db():
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS mensagens (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            texto TEXT,
-                            imagem TEXT,
-                            grupo TEXT,
-                            data_envio TEXT,
-                            status TEXT DEFAULT 'pendente')''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mensagens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                texto TEXT,
+                imagem TEXT,
+                grupo TEXT,
+                data_envio TEXT,
+                status TEXT DEFAULT 'pendente'
+            )
+        ''')
         conn.commit()
+
+init_db()  # Chama isso logo que o app inicia
 
 @app.route('/')
 def index():
@@ -41,8 +48,10 @@ def enviar():
 
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO mensagens (texto, imagem, grupo, data_envio) VALUES (?, ?, ?, ?)",
-                       (texto, imagem, grupo, data_envio))
+        cursor.execute(
+            "INSERT INTO mensagens (texto, imagem, grupo, data_envio) VALUES (?, ?, ?, ?)",
+            (texto, imagem, grupo, data_envio)
+        )
         conn.commit()
     return redirect(url_for('index'))
 
@@ -55,7 +64,6 @@ def disparar(mensagem_id):
 
         if mensagem:
             id, texto, imagem, grupo, data_envio, status = mensagem
-
             chat_id = CHAT_ID_FREE if grupo == "free" else CHAT_ID_VIP
 
             try:
@@ -70,12 +78,10 @@ def disparar(mensagem_id):
 
                 cursor.execute("UPDATE mensagens SET status = 'enviado' WHERE id = ?", (mensagem_id,))
                 conn.commit()
-
             except Exception as e:
                 return f"Erro ao enviar mensagem: {e}"
 
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
