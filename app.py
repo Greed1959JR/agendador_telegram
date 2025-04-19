@@ -4,6 +4,7 @@ import sqlite3
 from datetime import datetime
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 
 app = Flask(__name__)
 bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
@@ -109,7 +110,7 @@ def verificar_agendamentos():
                 print(f"Erro no agendamento automático: {e}")
         conn.commit()
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)})
 scheduler.add_job(verificar_agendamentos, 'interval', minutes=1)
 scheduler.start()
 
