@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Agendamento</title>
+</head>
+<body>
+    <h1>Agendar Mensagem</h1>
+    <form action="/enviar" method="POST">
+        <textarea name="texto" placeholder="Digite a mensagem..." rows="4" cols="50" required></textarea><br><br>
+        <input type="text" name="imagem" placeholder="URL ou caminho da imagem (opcional)"><br><br>
+
+        <label>Grupo:</label>
+        <select name="grupo" required>
+            <option value="free">Grupo Free</option>
+            <option value="vip">Grupo VIP</option>
+        </select><br><br>
+
+        <button type="submit">Agendar</button>
+    </form>
+
+    <hr>
+
+    <h2>Mensagens Agendadas</h2>
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>ID</th>
+            <th>Texto</th>
+            <th>Imagem</th>
+            <th>Grupo</th>
+            <th>Data de Agendamento</th>
+            <th>Status</th>
+            <th>Ações</th>
+        </tr>
+        {% for mensagem in mensagens %}
+        <tr>
+            <td>{{ mensagem[0] }}</td>
+            <td>{{ mensagem[1] }}</td>
+            <td>{{ mensagem[2] }}</td>
+            <td>{{ mensagem[3] }}</td>
+            <td>{{ mensagem[4] }}</td>
+            <td>{{ mensagem[5] }}</td>
+            <td><a href="/disparar/{{ mensagem[0] }}">Disparar</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
