@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from telegram import Bot
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 
 app = Flask(__name__)
@@ -45,8 +45,8 @@ def enviar():
     imagem = request.form['imagem']
     grupo = request.form['grupo']
 
-    # Converte data/hora para datetime e ajusta para UTC-3 (Brasília)
-   data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M").strftime("%Y-%m-%d %H:%M:%S")
+    # Sem ajuste manual de fuso horário — já vem certo do navegador
+    data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M").strftime("%Y-%m-%d %H:%M:%S")
 
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
