@@ -46,8 +46,7 @@ def enviar():
     grupo = request.form['grupo']
 
     # Converte data/hora para datetime e ajusta para UTC-3 (Brasília)
-    data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M")
-    data_envio = (data_envio - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S")
+   data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M").strftime("%Y-%m-%d %H:%M:%S")
 
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
