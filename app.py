@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor
-from pytz import utc
+import pytz
 
 app = Flask(__name__)
 bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
@@ -15,6 +15,7 @@ CHAT_ID_FREE = "-1002508674229"
 CHAT_ID_VIP = "-1002600167995"
 
 DATABASE = os.path.join(os.path.dirname(__file__), "database.db")
+FUSO_BR = pytz.timezone("America/Sao_Paulo")
 
 # Criação da tabela caso ainda não exista
 def init_db():
@@ -48,7 +49,8 @@ def enviar():
     imagem = request.form['imagem']
     grupo = request.form['grupo']
 
-    data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M").strftime("%Y-%m-%d %H:%M:%S")
+    data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M")
+    data_envio = FUSO_BR.localize(data_envio).strftime("%Y-%m-%d %H:%M:%S")
 
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
@@ -88,7 +90,7 @@ def disparar(mensagem_id):
     return redirect(url_for('index'))
 
 def verificar_agendamentos():
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    agora = datetime.now(FUSO_BR).strftime("%Y-%m-%d %H:%M:%S")
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM mensagens WHERE status = 'pendente' AND data_envio <= ?", (agora,))
@@ -110,10 +112,9 @@ def verificar_agendamentos():
                 print(f"Erro no agendamento automático: {e}")
         conn.commit()
 
-scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)}, timezone=utc)
+scheduler = BackgroundScheduler(executors={"default": ThreadPoolExecutor(1)})
 scheduler.add_job(verificar_agendamentos, 'interval', minutes=1)
 scheduler.start()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
-
