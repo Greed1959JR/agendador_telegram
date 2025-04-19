@@ -3,6 +3,7 @@ from telegram import Bot
 import sqlite3
 from datetime import datetime
 import os
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
@@ -81,9 +82,36 @@ def disparar(mensagem_id):
                 cursor.execute("UPDATE mensagens SET status = 'enviado' WHERE id = ?", (mensagem_id,))
                 conn.commit()
             except Exception as e:
-                return f"Erro ao enviar mensagem: {e}"
+                print(f"Erro ao enviar mensagem automática: {e}")
 
     return redirect(url_for('index'))
 
+def verificar_agendamentos():
+    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM mensagens WHERE status = 'pendente' AND data_envio <= ?", (agora,))
+        mensagens = cursor.fetchall()
+        for mensagem in mensagens:
+            id, texto, imagem, grupo, data_envio, status = mensagem
+            chat_id = CHAT_ID_FREE if grupo == "free" else CHAT_ID_VIP
+            try:
+                if imagem:
+                    if imagem.startswith("http://") or imagem.startswith("https://"):
+                        bot.send_photo(chat_id=chat_id, photo=imagem, caption=texto)
+                    else:
+                        with open(imagem, 'rb') as img:
+                            bot.send_photo(chat_id=chat_id, photo=img, caption=texto)
+                else:
+                    bot.send_message(chat_id=chat_id, text=texto)
+                cursor.execute("UPDATE mensagens SET status = 'enviado' WHERE id = ?", (id,))
+            except Exception as e:
+                print(f"Erro no agendamento automático: {e}")
+        conn.commit()
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(verificar_agendamentos, 'interval', minutes=1)
+scheduler.start()
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
