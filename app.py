@@ -39,15 +39,20 @@ init_db()
 def index():
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM mensagens ORDER BY id DESC")
+        cursor.execute("SELECT * FROM mensagens WHERE status = 'pendente' ORDER BY id DESC")
         mensagens = cursor.fetchall()
     return render_template("index.html", mensagens=mensagens)
 
 @app.route('/enviar', methods=['POST'])
 def enviar():
     texto = request.form['texto']
-    imagem = request.form['imagem']
+    imagem = request.files['imagem']
     grupo = request.form['grupo']
+
+    filename = None
+    if imagem:
+        filename = imagem.filename
+        imagem.save(os.path.join("static", filename))
 
     data_envio = datetime.strptime(request.form['data_envio'], "%Y-%m-%dT%H:%M")
     data_envio = FUSO_BR.localize(data_envio).strftime("%Y-%m-%d %H:%M:%S")
@@ -56,7 +61,7 @@ def enviar():
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO mensagens (texto, imagem, grupo, data_envio) VALUES (?, ?, ?, ?)",
-            (texto, imagem, grupo, data_envio)
+            (texto, filename, grupo, data_envio)
         )
         conn.commit()
     return redirect(url_for('index'))
@@ -70,23 +75,41 @@ def disparar(mensagem_id):
 
         if mensagem:
             id, texto, imagem, grupo, data_envio, status = mensagem
-            chat_id = CHAT_ID_FREE if grupo == "free" else CHAT_ID_VIP
+            chat_ids = [CHAT_ID_FREE, CHAT_ID_VIP] if grupo == "todos" else [CHAT_ID_FREE if grupo == "free" else CHAT_ID_VIP]
 
             try:
-                if imagem:
-                    if imagem.startswith("http://") or imagem.startswith("https://"):
-                        bot.send_photo(chat_id=chat_id, photo=imagem, caption=texto)
-                    else:
-                        with open(imagem, 'rb') as img:
+                for chat_id in chat_ids:
+                    if imagem:
+                        caminho_imagem = os.path.join("static", imagem)
+                        with open(caminho_imagem, 'rb') as img:
                             bot.send_photo(chat_id=chat_id, photo=img, caption=texto)
-                else:
-                    bot.send_message(chat_id=chat_id, text=texto)
+                    else:
+                        bot.send_message(chat_id=chat_id, text=texto)
+
+                if imagem:
+                    caminho_imagem = os.path.join("static", imagem)
+                    if os.path.exists(caminho_imagem):
+                        os.remove(caminho_imagem)
 
                 cursor.execute("UPDATE mensagens SET status = 'enviado' WHERE id = ?", (mensagem_id,))
                 conn.commit()
             except Exception as e:
                 print(f"Erro ao enviar mensagem automática: {e}")
 
+    return redirect(url_for('index'))
+
+@app.route('/excluir/<int:mensagem_id>', methods=['POST'])
+def excluir(mensagem_id):
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT imagem FROM mensagens WHERE id = ?", (mensagem_id,))
+        resultado = cursor.fetchone()
+        if resultado and resultado[0]:
+            caminho_imagem = os.path.join("static", resultado[0])
+            if os.path.exists(caminho_imagem):
+                os.remove(caminho_imagem)
+        cursor.execute("DELETE FROM mensagens WHERE id = ?", (mensagem_id,))
+        conn.commit()
     return redirect(url_for('index'))
 
 def verificar_agendamentos():
@@ -97,16 +120,21 @@ def verificar_agendamentos():
         mensagens = cursor.fetchall()
         for mensagem in mensagens:
             id, texto, imagem, grupo, data_envio, status = mensagem
-            chat_id = CHAT_ID_FREE if grupo == "free" else CHAT_ID_VIP
+            chat_ids = [CHAT_ID_FREE, CHAT_ID_VIP] if grupo == "todos" else [CHAT_ID_FREE if grupo == "free" else CHAT_ID_VIP]
             try:
-                if imagem:
-                    if imagem.startswith("http://") or imagem.startswith("https://"):
-                        bot.send_photo(chat_id=chat_id, photo=imagem, caption=texto)
-                    else:
-                        with open(imagem, 'rb') as img:
+                for chat_id in chat_ids:
+                    if imagem:
+                        caminho_imagem = os.path.join("static", imagem)
+                        with open(caminho_imagem, 'rb') as img:
                             bot.send_photo(chat_id=chat_id, photo=img, caption=texto)
-                else:
-                    bot.send_message(chat_id=chat_id, text=texto)
+                    else:
+                        bot.send_message(chat_id=chat_id, text=texto)
+
+                if imagem:
+                    caminho_imagem = os.path.join("static", imagem)
+                    if os.path.exists(caminho_imagem):
+                        os.remove(caminho_imagem)
+
                 cursor.execute("UPDATE mensagens SET status = 'enviado' WHERE id = ?", (id,))
             except Exception as e:
                 print(f"Erro no agendamento automático: {e}")
