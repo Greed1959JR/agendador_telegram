@@ -6,14 +6,17 @@
 </head>
 <body>
     <h1>Agendar Mensagem</h1>
-    <form action="/enviar" method="POST">
+    <form action="/enviar" method="POST" enctype="multipart/form-data">
         <textarea name="texto" placeholder="Digite a mensagem..." rows="4" cols="50" required></textarea><br><br>
-        <input type="text" name="imagem" placeholder="URL ou caminho da imagem (opcional)"><br><br>
+        
+        <label>Imagem (.jpg):</label>
+        <input type="file" name="imagem" accept=".jpg"><br><br>
 
         <label>Grupo:</label>
         <select name="grupo" required>
             <option value="free">Grupo Free</option>
             <option value="vip">Grupo VIP</option>
+            <option value="todos">Todos os Grupos</option>
         </select><br><br>
 
         <label>Data e hora de envio:</label><br>
@@ -39,11 +42,22 @@
         <tr>
             <td>{{ mensagem[0] }}</td>
             <td>{{ mensagem[1] }}</td>
-            <td>{{ mensagem[2] }}</td>
+            <td>
+                {% if mensagem[2] %}
+                    <img src="{{ url_for('static', filename=mensagem[2]) }}" width="100">
+                {% else %}
+                    -
+                {% endif %}
+            </td>
             <td>{{ mensagem[3] }}</td>
             <td>{{ mensagem[4] }}</td>
             <td>{{ mensagem[5] }}</td>
-            <td><a href="/disparar/{{ mensagem[0] }}">Disparar</a></td>
+            <td>
+                <a href="/disparar/{{ mensagem[0] }}">Disparar</a>
+                <form action="/excluir/{{ mensagem[0] }}" method="POST" style="display:inline;">
+                    <button type="submit">Excluir</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </table>
