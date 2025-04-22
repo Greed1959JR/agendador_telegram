@@ -8,7 +8,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from pytz import timezone
 
 app = Flask(__name__)
-bot = Bot(token="8071917672:AAG4R5z7b7w6PrOOLQ7Bi4nafMLy0LOL0I4")
+bot = Bot(token="8071917672:AAGTrFy3N0ifNBdVO-cggn1757b_qDzRzNs")
 
 # Chat IDs dos grupos
 CHAT_ID_FREE = "-1002508674229"
